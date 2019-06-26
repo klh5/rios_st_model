@@ -2,10 +2,10 @@ import json
 from rios import applier
 from rios import fileinfo
 from datetime import datetime
-from makeModel import MakeSeasonTrendModel
+from makemodel import MakeSeasonTrendModel
 import numpy as np
 
-def genPerBandModels(info, inputs, outputs, other_args):
+def gen_per_band_models(info, inputs, outputs, other_args):
     
     nodata_val = other_args.nodata_val
     
@@ -44,7 +44,7 @@ def genPerBandModels(info, inputs, outputs, other_args):
             st_model = MakeSeasonTrendModel(masked_dates, len_ts)
                 
             # Fit Lasso model. Complexity will be determined by number of observations
-            st_model.fitModel(masked, False)
+            st_model.fit_model(masked, False)
             
             # Extract coefficients for output
             coeffs = st_model.coefficients # Slope, cos1, sin1, cos2, sin2, cos3, sin3
@@ -79,7 +79,7 @@ def genPerBandModels(info, inputs, outputs, other_args):
     
     outputs.outimage = px_out
     
-def genLayerNames(bands):
+def gen_layer_names(bands):
     
     layer_names = []
     
@@ -97,7 +97,7 @@ def genLayerNames(bands):
         
     return(layer_names)
     
-def getSTModelCoeffs(json_fp, output_fp, output_driver='KEA', bands=None, num_processes=1):
+def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num_processes=1):
     
     paths = []
     dates = []
@@ -154,7 +154,7 @@ def getSTModelCoeffs(json_fp, output_fp, output_driver='KEA', bands=None, num_pr
     template_image = None
         
     # Set up output layer names based on band numbers
-    layer_names = genLayerNames(bands)
+    layer_names = gen_layer_names(bands)
     app.setLayerNames(layer_names)
     
     # Additional arguments - have to be passed as a single object
@@ -163,7 +163,7 @@ def getSTModelCoeffs(json_fp, output_fp, output_driver='KEA', bands=None, num_pr
     other_args.num_bands = num_bands
     other_args.nodata_val = nodata_val
     
-    applier.apply(genPerBandModels, infiles, outfiles, otherArgs=other_args, controls=app)
+    applier.apply(gen_per_band_models, infiles, outfiles, otherArgs=other_args, controls=app)
     
-getSTModelCoeffs('example_full.json', 'test_output.kea', bands=[3,4,5,6,7])
+get_ST_model_coeffs('example.json', 'test_output.kea', bands=[3,4,5,6,7])
 

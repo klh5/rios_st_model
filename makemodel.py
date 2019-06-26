@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn import linear_model
-from datetime import datetime
 
 class MakeSeasonTrendModel(object):
 
@@ -20,7 +19,7 @@ class MakeSeasonTrendModel(object):
         self.alpha = None     # Needed to store alpha if CV is used
         self.num_obs = num_obs
 
-    def fitModel(self, band_data, cv=True, alpha=1):
+    def fit_model(self, band_data, cv=True, alpha=1):
         
         """Finds the coefficients by fitting a Lasso model to the data"""
         
