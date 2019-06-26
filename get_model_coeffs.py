@@ -8,6 +8,9 @@ import numpy as np
 
 class PercentDone(object):
     
+    """Class for storing the percent complete. Safe to access from multiple
+    processes."""
+    
     def __init__(self):
         self.val = Value('i', -1)
         self.lock = Lock()
@@ -21,6 +24,11 @@ class PercentDone(object):
             return self.val.value
 
 def gen_per_band_models(info, inputs, outputs, other_args):
+    
+    """This function is run per-block by RIOS. In this case each block is a 
+    single pixel. Given a block of values for each band for each date, returns
+    a numpy array containing the model coefficients, RMSE, and an overall 
+    value for each band."""
     
     nodata_val = other_args.nodata_val
     
@@ -107,6 +115,9 @@ def gen_per_band_models(info, inputs, outputs, other_args):
     
 def gen_layer_names(bands):
     
+    """Given a list of band numbers, returns a list of layer names. These
+    make it easier to identify which values are which in the output image."""
+    
     layer_names = []
     
     for band in bands:
@@ -124,6 +135,11 @@ def gen_layer_names(bands):
     return(layer_names)
     
 def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num_processes=1):
+    
+    """Main function to run to generate the output image. Given an input JSON file
+    and an output file path, generates a multi-band output image where each pixel
+    contains the model details for that pixel. Opening/closing of files, generation
+    of blocks and use of multiprocessing is all handled by RIOS."""
     
     paths = []
     dates = []

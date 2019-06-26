@@ -3,7 +3,10 @@ from sklearn import linear_model
 
 class MakeSeasonTrendModel(object):
 
-    def __init__(self, datetimes, num_obs):
+    """Class containing all information and functions relating to fitting a 
+    season-trend model to a single pixel."""
+    
+    def __init__(self, datetimes):
         
         self.T = 365.25
         self.pi_val_simple = (2 * np.pi) / self.T
@@ -17,11 +20,12 @@ class MakeSeasonTrendModel(object):
         self.coefficients = None
         self.predicted = None
         self.alpha = None     # Needed to store alpha if CV is used
-        self.num_obs = num_obs
+        self.num_obs = len(datetimes)
 
     def fit_model(self, band_data, cv=True, alpha=1):
         
-        """Finds the coefficients by fitting a Lasso model to the data"""
+        """Given a 1D time series of values, fit a Lasso model to the data and 
+        store the resulting model coefficients and Root Mean Square Error."""
         
         # Rescale dates to start from 0
         rescaled = self.datetimes - self.datetimes[0]
