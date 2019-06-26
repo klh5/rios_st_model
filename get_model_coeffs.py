@@ -3,13 +3,30 @@ from rios import applier
 from rios import fileinfo
 from datetime import datetime
 from makemodel import MakeSeasonTrendModel
+from multiprocessing import Value, Lock
 import numpy as np
+
+class PercentDone(object):
+    
+    def __init__(self):
+        self.val = Value('i', -1)
+        self.lock = Lock()
+
+    def set_percent(self, percent):
+        with self.lock:
+            self.val.value = percent
+
+    def get_percent(self):
+        with self.lock:
+            return self.val.value
 
 def gen_per_band_models(info, inputs, outputs, other_args):
     
     nodata_val = other_args.nodata_val
     
     num_bands = other_args.num_bands
+    
+    progress_tracker = other_args.progress_tracker
     
     # Get length of time series
     len_ts = len(inputs.images)
@@ -76,6 +93,15 @@ def gen_per_band_models(info, inputs, outputs, other_args):
             px_out[layer+8][0][0] = coeffs[6]
         
         layer += 9 # There are always 9 outputs per band
+    
+    curr_percent = info.getPercent()
+    
+    # Update progress tracker. RIOS only returns an integer so checking the current value
+    # ensures that this only prints when the percentage changes. Has to be safe for access
+    # across all processes
+    if(curr_percent > progress_tracker.get_percent()):
+        progress_tracker.set_percent(curr_percent)
+        print('{}%'.format(curr_percent))
     
     outputs.outimage = px_out
     
@@ -162,6 +188,9 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
     other_args.dates = dates
     other_args.num_bands = num_bands
     other_args.nodata_val = nodata_val
+    
+    progress_tracker = PercentDone()
+    other_args.progress_tracker = progress_tracker
     
     applier.apply(gen_per_band_models, infiles, outfiles, otherArgs=other_args, controls=app)
     
