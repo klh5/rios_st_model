@@ -36,9 +36,6 @@ def gen_per_band_models(info, inputs, outputs, other_args):
     
     progress_tracker = other_args.progress_tracker
     
-    # Get length of time series
-    len_ts = len(inputs.images)
-    
     # Calculate number of outputs
     num_outputs = num_bands * 9
     
@@ -51,7 +48,7 @@ def gen_per_band_models(info, inputs, outputs, other_args):
     # Get data for one band at a time
     for band in range(0, num_bands):
         
-        band_data = np.array([inputs.images[t][band][0][0] for t in range(0, len_ts)])
+        band_data = np.array([inputs.images[t][band][0][0] for t in range(0, len(inputs.images))])
         
         # Get indices of missing values
         mask = np.where(band_data == nodata_val)
@@ -60,13 +57,13 @@ def gen_per_band_models(info, inputs, outputs, other_args):
         masked = np.delete(band_data, mask)
         
         # Check if any data is left once no data values have been removed
-        if masked.size > 6:
+        if masked.size >= 6:
         
             # Drop missing data points from dates
             masked_dates = np.delete(other_args.dates, mask)
             
             # Initialise model class
-            st_model = MakeSeasonTrendModel(masked_dates, len_ts)
+            st_model = MakeSeasonTrendModel(masked_dates)
                 
             # Fit Lasso model. Complexity will be determined by number of observations
             st_model.fit_model(masked, False)
