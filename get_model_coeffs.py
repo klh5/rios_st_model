@@ -1,4 +1,5 @@
 import json
+import sys
 from rios import applier
 from rios import fileinfo
 from datetime import datetime
@@ -141,14 +142,21 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
     paths = []
     dates = []
     
-    # Open and read JSON file containing date:filepath pairs
-    with open(json_fp) as json_file:  
-        image_list = json.load(json_file)
-    
-        for date, img_path in image_list.items():
-            dates.append(datetime.strptime(date, '%Y-%m-%d').toordinal())
-            paths.append(img_path)
-    
+    try:
+        # Open and read JSON file containing date:filepath pairs
+        with open(json_fp) as json_file:  
+            image_list = json.load(json_file)
+        
+            for date, img_path in image_list.items():
+                dates.append(datetime.strptime(date, '%Y-%m-%d').toordinal())
+                paths.append(img_path)
+    except FileNotFoundError:
+        print('Could not find the provided JSON file.')
+        sys.exit()
+    except json.decoder.JSONDecodeError as e:
+        print('There is an error in the provided JSON file: {}'.format(e))
+        sys.exit()
+        
     # Create object to hold input files    
     infiles = applier.FilenameAssociations()
     infiles.images = paths
@@ -205,7 +213,11 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
     progress_tracker = PercentDone()
     other_args.progress_tracker = progress_tracker
     
-    applier.apply(gen_per_band_models, infiles, outfiles, otherArgs=other_args, controls=app)
+    try:
+        applier.apply(gen_per_band_models, infiles, outfiles, otherArgs=other_args, controls=app)
+    except RuntimeError as e:
+        print('There was an error processing the images: {}'.format(e))
+        print('Do all images in the JSON file exist?')
     
 get_ST_model_coeffs('example.json', 'test_output.kea', bands=[3,4,5,6,7])
 
