@@ -27,8 +27,12 @@ class MakeSeasonTrendModel(object):
         """Given a 1D time series of values, fit a Lasso model to the data and 
         store the resulting model coefficients and Root Mean Square Error."""
         
+        # Get minimum/earliest date. This is used to rescale dates so that they
+        # start from 0
+        start_date = np.min(self.datetimes)
+        
         # Rescale dates to start from 0
-        rescaled = self.datetimes - self.datetimes[0]
+        rescaled = self.datetimes - start_date
         
         # Complexity of fit is based on Zhu et al. 2015: Generating synthetic Landsat images based on all available Landsat data: Predicting Landsat surface reflectance at any given time.
         # There should be at least three times more data points that the number of coefficients.
