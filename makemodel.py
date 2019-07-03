@@ -1,31 +1,30 @@
 import numpy as np
 from sklearn import linear_model
 
+# could have two functions- one for Lasso, one for OLS
+# all of the stored class variables should work for either model type
+
 class MakeSeasonTrendModel(object):
 
     """Class containing all information and functions relating to fitting a 
     season-trend model to a single pixel."""
     
-    def __init__(self, datetimes):
+    def __init__(self, datetimes, band_data):
         
         self.T = 365.25
         self.pi_val_simple = (2 * np.pi) / self.T
         self.pi_val_advanced = (4 * np.pi) / self.T
         self.pi_val_full = (6 * np.pi) / self.T
         self.datetimes = datetimes
+        self.band_data = band_data
         
-        self.lasso_model = None
+        self.st_model = None # Model object
         self.residuals = None
         self.RMSE = None
         self.coefficients = None
         self.predicted = None
         self.alpha = None     # Needed to store alpha if CV is used
         self.num_obs = len(datetimes)
-
-    def fit_model(self, band_data, cv=True, alpha=1):
-        
-        """Given a 1D time series of values, fit a Lasso model to the data and 
-        store the resulting model coefficients and Root Mean Square Error."""
         
         # Get minimum/earliest date. This is used to rescale dates so that they
         # start from 0
@@ -52,23 +51,43 @@ class MakeSeasonTrendModel(object):
             x = np.vstack((x, np.array([np.cos(self.pi_val_full * rescaled),
                       np.sin(self.pi_val_full * rescaled)])))
     
-        x = x.T
-
-        if(cv): # If cross validation should be used to find alpha parameter
-            self.lasso_model = linear_model.LassoCV(fit_intercept=True).fit(x, band_data)
-            self.alpha = self.lasso_model.alpha_
-        else:
-            self.lasso_model = linear_model.Lasso(fit_intercept=True, alpha=alpha).fit(x, band_data)
-            self.alpha = alpha
-                                
-        self.predicted = self.lasso_model.predict(x)
+        self.x = x.T 
         
-        self.coefficients = self.lasso_model.coef_
+    def getRMSE(self):
         
-        self.residuals = band_data - self.predicted
+        self.predicted = self.model.predict(self.x)
     
+        self.coefficients = self.model.coef_
+    
+        self.residuals = self.band_data - self.predicted
+
         # Get overall RMSE of model
         self.RMSE = np.sqrt(np.mean(self.residuals ** 2))
+        
+    def fit_lasso_model(self, cv=True, alpha=1):
+        
+        """Given a 1D time series of values, fit a Lasso model to the data and 
+        store the resulting model coefficients and Root Mean Square Error."""
+            
+        if(cv): # If cross validation should be used to find alpha parameter
+            self.model = linear_model.LassoCV(fit_intercept=True).fit(self.x, self.band_data)
+            self.alpha = self.lasso_model.alpha_
+        else:
+            self.model = linear_model.Lasso(fit_intercept=True, alpha=alpha).fit(self.x, self.band_data)
+            self.alpha = alpha
+            
+        self.getRMSE()
+        
+    def fit_ols_model(self):
+        
+        """Given a 1D time series of values, fit an OLS model to the data and 
+        store the resulting model coefficients and Root Mean Square Error."""
+        
+        self.model = linear_model.LinearRegression(fit_intercept=True).fit(self.x, self.band_data) 
+        
+        self.getRMSE()
+                                
+        
     
 
 
