@@ -64,7 +64,7 @@ class MakeSeasonTrendModel(object):
         # Get overall RMSE of model
         self.RMSE = np.sqrt(np.mean(self.residuals ** 2))
         
-    def fit_lasso_model(self, cv=True, alpha=1):
+    def fit_lasso_model(self, cv, alpha):
         
         """Given a 1D time series of values, fit a Lasso model to the data and 
         store the resulting model coefficients and Root Mean Square Error."""

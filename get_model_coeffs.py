@@ -64,10 +64,15 @@ def gen_per_band_models(info, inputs, outputs, other_args):
             masked_dates = np.delete(other_args.dates, mask)
             
             # Initialise model class
-            st_model = MakeSeasonTrendModel(masked_dates)
+            st_model = MakeSeasonTrendModel(masked_dates, masked)
+            
+            # If Lasso model is chosen, fit the model using the variables provided
+            # By default, alpha=1 and cross validation is not done
+            if(other_args.model_type == 'Lasso'):
+                st_model.fit_lasso_model(other_args.cv, other_args.alpha)
                 
-            # Fit Lasso model. Complexity will be determined by number of observations
-            st_model.fit_model(masked, False)
+            else:
+                st_model.fit_ols_model()
             
             # Extract coefficients for output
             coeffs = st_model.coefficients # Slope, cos1, sin1, cos2, sin2, cos3, sin3
@@ -80,7 +85,7 @@ def gen_per_band_models(info, inputs, outputs, other_args):
             mid_ts = (masked_dates[-1] - masked_dates[0]) / 2
                  
             # Calculate overall value for period
-            intercept = st_model.lasso_model.intercept_
+            intercept = st_model.model.intercept_
             overall_val = intercept + (slope * mid_ts)
                  
             px_out[layer+2][0][0] = overall_val
@@ -132,7 +137,7 @@ def gen_layer_names(bands):
         
     return(layer_names)
     
-def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num_processes=1):
+def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num_processes=1, model_type='Lasso', alpha=1, cv=False):
     
     """Main function to run to generate the output image. Given an input JSON file
     and an output file path, generates a multi-band output image where each pixel
@@ -209,6 +214,9 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
     other_args.dates = dates
     other_args.num_bands = num_bands
     other_args.nodata_val = nodata_val
+    other_args.model_type = model_type
+    other_args.alpha = alpha
+    other_args.cv = cv
     
     progress_tracker = PercentDone()
     other_args.progress_tracker = progress_tracker
@@ -219,5 +227,5 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
         print('There was an error processing the images: {}'.format(e))
         print('Do all images in the JSON file exist?')
     
-get_ST_model_coeffs('example.json', 'test_output.kea', bands=[3,4,5,6,7])
+get_ST_model_coeffs('example.json', 'test_output.kea', bands=[3,4,5,6,7], alpha=0.01)
 
