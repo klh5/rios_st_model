@@ -4,25 +4,7 @@ from rios import applier
 from rios import fileinfo
 from datetime import datetime
 from makemodel import MakeSeasonTrendModel
-from multiprocessing import Value, Lock
 import numpy as np
-
-class PercentDone(object):
-    
-    """Class for storing the percent complete. Safe to access from multiple
-    processes."""
-    
-    def __init__(self):
-        self.val = Value('i', -1)
-        self.lock = Lock()
-
-    def set_percent(self, percent):
-        with self.lock:
-            self.val.value = percent
-
-    def get_percent(self):
-        with self.lock:
-            return self.val.value
 
 def gen_per_band_models(info, inputs, outputs, other_args):
     
@@ -35,7 +17,7 @@ def gen_per_band_models(info, inputs, outputs, other_args):
     
     num_bands = other_args.num_bands
     
-    progress_tracker = other_args.progress_tracker
+    #progress_tracker = other_args.progress_tracker
     
     # Calculate number of outputs
     num_outputs = num_bands * 9
@@ -105,14 +87,8 @@ def gen_per_band_models(info, inputs, outputs, other_args):
         
         layer += 9 # There are always 9 outputs per band
     
-    curr_percent = info.getPercent()
-    
-    # Update progress tracker. RIOS only returns an integer so checking the current value
-    # ensures that this only prints when the percentage changes. Has to be safe for access
-    # across all processes
-    if(curr_percent > progress_tracker.get_percent()):
-        progress_tracker.set_percent(curr_percent)
-        print('{}%'.format(curr_percent))
+    curr_percent = float(info.yblock * info.xtotalblocks + info.xblock) / float(info.xtotalblocks * info.ytotalblocks) * 100
+    print('{:.2f}'.format(curr_percent))
     
     outputs.outimage = px_out
     
@@ -218,14 +194,11 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
     other_args.alpha = alpha
     other_args.cv = cv
     
-    progress_tracker = PercentDone()
-    other_args.progress_tracker = progress_tracker
-    
     try:
         applier.apply(gen_per_band_models, infiles, outfiles, otherArgs=other_args, controls=app)
     except RuntimeError as e:
         print('There was an error processing the images: {}'.format(e))
         print('Do all images in the JSON file exist?')
     
-get_ST_model_coeffs('example.json', 'test_output.kea', bands=[3,4,5,6,7], alpha=0.01)
+get_ST_model_coeffs('example.json', 'output_full.kea', bands=[2,3,4,5,6], alpha=0.01, num_processes=4)
 
