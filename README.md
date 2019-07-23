@@ -11,3 +11,5 @@ The input is a JSON file with a list of date:filepath pairs as strings, e.g:
 "YYYY-MM-DD": "/path/to/image/file/3.tif"}
 
 See also the included file example.json. The files do not have to be listed in order of date.
+
+There is also a function for using the generated models to predict a new image for any given date, which takes the first image as input.
