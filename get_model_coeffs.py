@@ -103,26 +103,42 @@ def gen_layer_names(bands):
     
     for band in bands:
         
-        layer_names.append('band{}_slope'.format(band))
-        layer_names.append('band{}_intercept'.format(band))
-        layer_names.append('band{}_cos1'.format(band))
-        layer_names.append('band{}_sin1'.format(band))
-        layer_names.append('band{}_cos2'.format(band))
-        layer_names.append('band{}_sin2'.format(band))
-        layer_names.append('band{}_cos3'.format(band))
-        layer_names.append('band{}_sin3'.format(band))
-        layer_names.append('band{}_RMSE'.format(band))
-        layer_names.append('band{}_overall'.format(band))
-        layer_names.append('band{}_start'.format(band))
+        layer_names.append('{}_slope'.format(band))
+        layer_names.append('{}_intercept'.format(band))
+        layer_names.append('{}_cos1'.format(band))
+        layer_names.append('{}_sin1'.format(band))
+        layer_names.append('{}_cos2'.format(band))
+        layer_names.append('{}_sin2'.format(band))
+        layer_names.append('{}_cos3'.format(band))
+        layer_names.append('{}_sin3'.format(band))
+        layer_names.append('{}_RMSE'.format(band))
+        layer_names.append('{}_overall'.format(band))
+        layer_names.append('{}_start'.format(band))
         
     return(layer_names)
     
-def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num_processes=1, model_type='Lasso', alpha=1, cv=False):
+def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num_processes=1, model_type='Lasso', alpha=20, cv=False):
     
     """Main function to run to generate the output image. Given an input JSON file
     and an output file path, generates a multi-band output image where each pixel
     contains the model details for that pixel. Opening/closing of files, generation
-    of blocks and use of multiprocessing is all handled by RIOS."""
+    of blocks and use of multiprocessing is all handled by RIOS.
+    
+    json_fp:       Path to JSON file of date/filepath pairs.
+    output_fp:     Path for output file.
+    output_driver: Short driver name for GDAL, e.g. KEA, GTiff.
+    bands:         List of GDAL band numbers to use in the analysis, e.g. [2, 5, 7].
+    num_processes: Number of concurrent processes to use.
+    model_type:    Either 'Lasso' or 'OLS'. The type of model fitting to use. OLS will 
+                   be faster, but more likely to overfit. Both types will adjust the number of model
+                   coefficients depending on the number of observations.
+    alpha:         If using Lasso fitting, the alpha value controls the degree of
+                   penalization of the coefficients. The lower the value, the closer 
+                   the model will fit the data. For surface reflectance, a value of 
+                   around 20 (the default) is usually OK.
+    cv:            If using Lasso fitting, you can use cross validation to choose
+                   the value of alpha by setting cv=True. However, this is not recommended and will
+                   substantially increase run time."""
     
     paths = []
     dates = []
@@ -182,11 +198,14 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
     
         # Need to tell the applier to only use the specified bands 
         app.selectInputImageLayers(bands)
-        
+    
+    # Create list of actual names
+    
+    full_names = [template_image.layerNameFromNumber(i) for i in bands]    
     template_image = None
         
     # Set up output layer names based on band numbers
-    layer_names = gen_layer_names(bands)
+    layer_names = gen_layer_names(full_names)
     app.setLayerNames(layer_names)
     
     # Additional arguments - have to be passed as a single object
@@ -203,6 +222,7 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
     except RuntimeError as e:
         print('There was an error processing the images: {}'.format(e))
         print('Do all images in the JSON file exist?')
-    
-get_ST_model_coeffs('example.json', 'output.kea', bands=[2,3,4,5,6], alpha=0.01, num_processes=4)
+
+# Example    
+get_ST_model_coeffs('example.json', 'output.kea', bands=[3,4,5,6,7], num_processes=4)
 

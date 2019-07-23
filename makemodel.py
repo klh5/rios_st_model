@@ -71,7 +71,7 @@ class MakeSeasonTrendModel(object):
             
         if(cv): # If cross validation should be used to find alpha parameter
             self.model = linear_model.LassoCV(fit_intercept=True).fit(self.x, self.band_data)
-            self.alpha = self.lasso_model.alpha_
+            self.alpha = self.model.alpha_
         else:
             self.model = linear_model.Lasso(fit_intercept=True, alpha=alpha).fit(self.x, self.band_data)
             self.alpha = alpha
