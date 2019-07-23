@@ -28,10 +28,10 @@ class MakeSeasonTrendModel(object):
         
         # Get minimum/earliest date. This is used to rescale dates so that they
         # start from 0
-        start_date = np.min(self.datetimes)
+        self.start_date = np.min(self.datetimes)
         
         # Rescale dates to start from 0
-        rescaled = self.datetimes - start_date
+        rescaled = self.datetimes - self.start_date
         
         # Complexity of fit is based on Zhu et al. 2015: Generating synthetic Landsat images based on all available Landsat data: Predicting Landsat surface reflectance at any given time.
         # There should be at least three times more data points that the number of coefficients.

@@ -8,7 +8,7 @@ import numpy as np
 
 def gen_per_band_models(info, inputs, outputs, other_args):
     
-    """This function is run per-block by RIOS. In this case each block is a 
+    """Run per-block by RIOS. In this case each block is a 
     single pixel. Given a block of values for each band for each date, returns
     a numpy array containing the model coefficients, RMSE, and an overall 
     value for each band."""
@@ -17,10 +17,8 @@ def gen_per_band_models(info, inputs, outputs, other_args):
     
     num_bands = other_args.num_bands
     
-    #progress_tracker = other_args.progress_tracker
-    
     # Calculate number of outputs
-    num_outputs = num_bands * 9
+    num_outputs = num_bands * 11
     
     # Set up array with the correct output shape
     px_out = np.zeros((num_outputs, 1, 1), dtype='float64')
@@ -59,9 +57,24 @@ def gen_per_band_models(info, inputs, outputs, other_args):
             # Extract coefficients for output
             coeffs = st_model.coefficients # Slope, cos1, sin1, cos2, sin2, cos3, sin3
             slope = coeffs[0]
-            px_out[layer][0][0] = slope
+            intercept = st_model.model.intercept_
+            px_out[layer] = slope
+            px_out[layer+1] = intercept
             
-            px_out[layer+1] = st_model.RMSE
+            # Pad out coefficients
+            # Some models might not have second or third harmonic terms - these are set to 0 to allow the same classifier
+            # to be used
+            coeffs = np.pad(coeffs, (0, 7-len(coeffs)), 'constant')
+            
+            # Add harmonic coefficients to output
+            px_out[layer+2] = coeffs[1]
+            px_out[layer+3] = coeffs[2]
+            px_out[layer+4] = coeffs[3]
+            px_out[layer+5] = coeffs[4]
+            px_out[layer+6] = coeffs[5]
+            px_out[layer+7] = coeffs[6]
+            
+            px_out[layer+8] = st_model.RMSE
             
             # Get middle date
             mid_ts = (masked_dates[-1] - masked_dates[0]) / 2
@@ -70,22 +83,11 @@ def gen_per_band_models(info, inputs, outputs, other_args):
             intercept = st_model.model.intercept_
             overall_val = intercept + (slope * mid_ts)
                  
-            px_out[layer+2][0][0] = overall_val
+            px_out[layer+9][0][0] = overall_val
             
-            # Pad out coefficients
-            # Some models might not have second or third harmonic terms - these are set to 0 to allow the same classifier
-            # to be used
-            coeffs = np.pad(coeffs, (0, 7-len(coeffs)), 'constant')
+            px_out[layer+10] = st_model.start_date
             
-            # Add harmonic coefficients to output
-            px_out[layer+3][0][0] = coeffs[1]
-            px_out[layer+4][0][0] = coeffs[2]
-            px_out[layer+5][0][0] = coeffs[3]
-            px_out[layer+6][0][0] = coeffs[4]
-            px_out[layer+7][0][0] = coeffs[5]
-            px_out[layer+8][0][0] = coeffs[6]
-        
-        layer += 9 # There are always 9 outputs per band
+        layer += 11 # There are always 11 outputs per band
     
     curr_percent = float(info.yblock * info.xtotalblocks + info.xblock) / float(info.xtotalblocks * info.ytotalblocks) * 100
     print('{:.2f}'.format(curr_percent))
@@ -102,14 +104,16 @@ def gen_layer_names(bands):
     for band in bands:
         
         layer_names.append('band{}_slope'.format(band))
-        layer_names.append('band{}_RMSE'.format(band))
-        layer_names.append('band{}_overall'.format(band))
+        layer_names.append('band{}_intercept'.format(band))
         layer_names.append('band{}_cos1'.format(band))
         layer_names.append('band{}_sin1'.format(band))
         layer_names.append('band{}_cos2'.format(band))
         layer_names.append('band{}_sin2'.format(band))
         layer_names.append('band{}_cos3'.format(band))
         layer_names.append('band{}_sin3'.format(band))
+        layer_names.append('band{}_RMSE'.format(band))
+        layer_names.append('band{}_overall'.format(band))
+        layer_names.append('band{}_start'.format(band))
         
     return(layer_names)
     
@@ -200,5 +204,5 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
         print('There was an error processing the images: {}'.format(e))
         print('Do all images in the JSON file exist?')
     
-get_ST_model_coeffs('example.json', 'output_full.kea', bands=[2,3,4,5,6], alpha=0.01, num_processes=4)
+get_ST_model_coeffs('example.json', 'output.kea', bands=[2,3,4,5,6], alpha=0.01, num_processes=4)
 
