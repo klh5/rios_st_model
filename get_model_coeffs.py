@@ -224,5 +224,5 @@ def get_ST_model_coeffs(json_fp, output_fp, output_driver='KEA', bands=None, num
         print('Do all images in the JSON file exist?')
 
 # Example    
-get_ST_model_coeffs('example.json', 'output.kea', bands=[3,4,5,6,7], num_processes=4)
+get_ST_model_coeffs('example.json', 'coeffs.kea', bands=[3,4,5,6,7], num_processes=4)
 
